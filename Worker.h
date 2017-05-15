@@ -23,6 +23,7 @@ private:
 	void lock_semaphore();
 	void unlock_semaphore();
 	int add_tuple_to_memory(Tuple tuple);
+	int add_string_to_memory(char * memory_tuple_str, char * user_tuple_str);
 	Pattern_Pair* check_waiting_queue(Tuple tuple);
 	Tuple* find_tuple_in_memory(std::string pattern);
 	void wake_up_process(Pattern_Pair* waiting_addr);

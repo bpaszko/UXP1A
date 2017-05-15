@@ -66,7 +66,6 @@ Tuple Worker::input(std::string pattern)
 	return tuple;
 }
 
-
 //put tuple in shared memo.   1 - success, 0 - failure
 int Worker::add_tuple_to_memory(Tuple tuple)
 {
@@ -77,20 +76,39 @@ int Worker::add_tuple_to_memory(Tuple tuple)
 		{
 			for(int i = 0; i < 8; ++i)
 			{
-				addr->data[i] = tuple.data[i];
 				if(tuple.data[i].type == DATA_STRING)
-				{
-					char * str_addr = (char*)(memory_addr + string_array_offset);
-					while(*str_addr != NULL_SIGN)
-						str_addr += STRING_SIZE;
-					strcpy(str_addr, tuple.data[i].data_union.data_string);
-					addr->data[i].data_union.data_string = str_addr;
-				}
+					if(add_string_to_memory(addr->data[i].data_union.data_string, \
+						tuple.data[i].data_union.data_string))
+							addr->data[i].type = tuple.data[i].type;
+					else
+					{
+						remove_tuple_from_memory(addr);
+						return 0;
+					}
+				else
+					addr->data[i] = tuple.data[i];
 			}
 			return 1;
 		}
 		else
 			addr += TUPLE_SIZE;
+	}
+	return 0;
+}
+
+int Worker::add_string_to_memory(char * memory_tuple_str, char * user_tuple_str)
+{
+	char * str_addr = (char*)(memory_addr + string_array_offset);
+	while((int*)str_addr < memory_addr + waiting_array_offset)
+	{
+		if(*str_addr == NULL_SIGN)
+		{
+			strcpy(str_addr, user_tuple_str);
+			memory_tuple_str = str_addr;
+			return 1;
+		}
+		else
+			str_addr += STRING_SIZE;
 	}
 	return 0;
 }
@@ -102,12 +120,9 @@ Pattern_Pair* Worker::check_waiting_queue(Tuple tuple)
 	while ((int*)addr < memory_addr + shared_size)
 	{
 		if (*(addr->pattern) != NULL_SIGN)
-		{
 			if(compare_tuple_with_pattern(tuple, addr->pattern))
 				return addr;
-		}
-		else
-			addr += sizeof(Pattern_Pair);
+		addr += sizeof(Pattern_Pair);
 	}
 	return nullptr;
 }
@@ -143,14 +158,17 @@ int Worker::wait_in_memory_for_tuple(std::string pattern)
 		{
 			strcpy(addr->pattern, pattern.c_str());
 			sem_init(addr->sem,1,0);
+			unlock_semaphore();
 			sem_wait(addr->sem);
 			sem_destroy(addr->sem);
 			*(addr->pattern) = NULL_SIGN;
-			break;
+			lock_semaphore();
+			return 1;
 		}
 		else
 			addr += sizeof(Pattern_Pair);
 	}
+	return 0;
 }
 
 //returns tuple stored at given address

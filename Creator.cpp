@@ -43,7 +43,7 @@ Creator::Creator(int max_tuples, int waiting_size)
 	//INIT WAITING ARRAY
 	Pattern_Pair pair;
 	*pair.pattern = NULL_SIGN;
-	Pattern_Pair* wait_addr = (Pattern_Pair*)(memory_addr + meta.string_array_offset);
+	Pattern_Pair* wait_addr = (Pattern_Pair*)(memory_addr + meta.waiting_array_offset);
 	for(int i = 0; i < waiting_size; ++i)
 	{
 		*wait_addr = pair;
