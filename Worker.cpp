@@ -206,7 +206,100 @@ void Worker::unlock_semaphore()
 	sem_post(meta->main_sem);
 }
 
-bool Worker::compare_tuple_with_pattern(Tuple tuple, std::string str)
-{
-	return true;
+bool Worker::compare_tuple_with_pattern(Tuple tuple, std::string str){
+    std::stringstream test(str);
+    std::string segment;
+    std::vector<std::string> elements;
+
+    while(std::getline(test, segment, ','))
+    {
+       elements.push_back(segment);
+    }
+
+    if(elements.size()>8){
+        return false;
+    }
+
+    for(unsigned i=0;i<elements.size();i++){
+        char type = elements[i][0];
+        if(type == 's'){
+            string value = elements[i].substr(2);
+            if(value=="*"){
+                continue;
+            }
+            value = value.substr(1);
+            value = value.substr(0,value.size()-1);
+            cout<<value;
+
+            if( value  != tuple.data[i].data_union.data_string){
+                return false;
+            }
+        }
+        else if(type == 'i' && tuple.data[i].type == DATA_INT){
+            if(isdigit(elements[i][2])){
+                string value = elements[i].substr(2);
+                if( (stoi( value )) != tuple.data[i].data_union.data_int){
+                    return false;
+                }
+            }
+            else{
+                string value = elements[i].substr(3);
+                char sign = elements[i][2];
+                if(sign =='*'){
+                    continue;
+                }
+                else if(sign == '>'){
+                    if( (stoi( value )) >= tuple.data[i].data_union.data_int){
+                        return false;
+                    }
+                }
+                else if(sign =='<'){
+                    if( (stoi( value )) <= tuple.data[i].data_union.data_int){
+                        return false;
+                    }
+                }
+                else{
+                    return false;
+                }
+            }
+
+        }
+        else if(type == 'f' && tuple.data[i].type == DATA_FLOAT){
+            if(isdigit(elements[i][2])){
+                string value = elements[i].substr(2);
+                if( stof( value ) != tuple.data[i].data_union.data_float){
+                    return false;
+                }
+            }
+            else{
+                string value = elements[i].substr(3);
+                char sign = elements[i][2];
+                if(sign =='*'){
+                    continue;
+                }
+                else if(sign == '>'){
+                    if( (stof( value )) >= tuple.data[i].data_union.data_float){
+                        return false;
+                    }
+                }
+                else if(sign =='<'){
+                    if( (stof( value )) <= tuple.data[i].data_union.data_float){
+                        return false;
+                    }
+                }
+                else{
+                    return false;
+                }
+            }
+        }
+        else{
+            return false;
+        }
+    }
+   for(int i = elements.size();i<8;i++){
+       if(tuple.data[i].type != NO_DATA){
+           return false;
+       }
+   }
+    return true;
 }
