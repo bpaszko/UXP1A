@@ -1,7 +1,11 @@
 #include "tuple.h"
 #include <string.h>
 #include <string>
-
+#include <vector>
+#include <sstream>
+#if DEBUG
+#include <iostream>
+#endif
 class Worker
 {
 public: 

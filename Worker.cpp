@@ -223,38 +223,39 @@ bool Worker::compare_tuple_with_pattern(Tuple tuple, std::string str){
     for(unsigned i=0;i<elements.size();i++){
         char type = elements[i][0];
         if(type == 's'){
-            string value = elements[i].substr(2);
-            if(value=="*"){
+            std::string value = elements[i].substr(2);
+            if(value == "*"){
                 continue;
             }
             value = value.substr(1);
             value = value.substr(0,value.size()-1);
-            cout<<value;
-
+	#if DEBUG
+            std::cout<<value;
+	#endif
             if( value  != tuple.data[i].data_union.data_string){
                 return false;
             }
         }
         else if(type == 'i' && tuple.data[i].type == DATA_INT){
             if(isdigit(elements[i][2])){
-                string value = elements[i].substr(2);
-                if( (stoi( value )) != tuple.data[i].data_union.data_int){
+                std::string value = elements[i].substr(2);
+                if( (std::stoi( value )) != tuple.data[i].data_union.data_int){
                     return false;
                 }
             }
             else{
-                string value = elements[i].substr(3);
+                std::string value = elements[i].substr(3);
                 char sign = elements[i][2];
-                if(sign =='*'){
+                if(sign == '*'){
                     continue;
                 }
                 else if(sign == '>'){
-                    if( (stoi( value )) >= tuple.data[i].data_union.data_int){
+                    if( (std::stoi( value )) >= tuple.data[i].data_union.data_int){
                         return false;
                     }
                 }
-                else if(sign =='<'){
-                    if( (stoi( value )) <= tuple.data[i].data_union.data_int){
+                else if(sign == '<'){
+                    if( (std::stoi( value )) <= tuple.data[i].data_union.data_int){
                         return false;
                     }
                 }
@@ -266,24 +267,24 @@ bool Worker::compare_tuple_with_pattern(Tuple tuple, std::string str){
         }
         else if(type == 'f' && tuple.data[i].type == DATA_FLOAT){
             if(isdigit(elements[i][2])){
-                string value = elements[i].substr(2);
-                if( stof( value ) != tuple.data[i].data_union.data_float){
+                std::string value = elements[i].substr(2);
+                if( std::stof( value ) != tuple.data[i].data_union.data_float){
                     return false;
                 }
             }
             else{
-                string value = elements[i].substr(3);
+                std::string value = elements[i].substr(3);
                 char sign = elements[i][2];
-                if(sign =='*'){
+                if(sign == '*'){
                     continue;
                 }
                 else if(sign == '>'){
-                    if( (stof( value )) >= tuple.data[i].data_union.data_float){
+                    if( (std::stof( value )) >= tuple.data[i].data_union.data_float){
                         return false;
                     }
                 }
-                else if(sign =='<'){
-                    if( (stof( value )) <= tuple.data[i].data_union.data_float){
+                else if(sign == '<'){
+                    if( (std::stof( value )) <= tuple.data[i].data_union.data_float){
                         return false;
                     }
                 }
