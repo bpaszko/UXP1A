@@ -14,6 +14,7 @@ public:
 	void output(Tuple tuple);
 	Tuple input(std::string pattern);
 	Tuple read(std::string pattern);
+	std::string get_pattern_from_tuple(Tuple tuple);
 private:
 	int* memory_addr;
 	int tuple_array_offset;

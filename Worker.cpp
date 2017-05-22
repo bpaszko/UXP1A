@@ -304,3 +304,33 @@ bool Worker::compare_tuple_with_pattern(Tuple tuple, std::string str){
    }
     return true;
 }
+
+std::string Worker::get_pattern_from_tuple(Tuple tuple)
+{
+	std::string pattern;
+	int tuple_it = 0;
+	while(tuple.data[tuple_it].type != data_type::NO_DATA)
+	{
+		switch(tuple.data[tuple_it].type)
+		{
+			case data_type::DATA_INT:
+			pattern += "i:";
+			pattern += std::to_string(tuple.data[tuple_it].data_union.data_int);
+			break;
+			case data_type::DATA_FLOAT:
+			pattern += "f:";
+			pattern += std::to_string(tuple.data[tuple_it].data_union.data_float);
+			break;			
+			case data_type::DATA_STRING:
+			pattern += "s:";
+			pattern += tuple.data[tuple_it].data_union.data_string;
+			break;
+			default:
+			pattern += "????";
+		}
+		tuple_it++;
+		if(tuple.data[tuple_it].type != data_type::NO_DATA)
+			pattern += ','; 
+	}
+	return pattern;
+}
