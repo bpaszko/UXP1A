@@ -28,9 +28,10 @@ typedef struct {
 } Tuple_Data;
 //8 bytes
 
-typedef struct {
+struct Tuple {
 	Tuple_Data data[8];
-} Tuple;
+	Tuple() { for(int i = 0; i < 8; ++i) this->data[i].type = data_type::NO_DATA; }
+};
 //64 bytes
 
 typedef struct {

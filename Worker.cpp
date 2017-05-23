@@ -72,13 +72,14 @@ int Worker::add_tuple_to_memory(Tuple tuple)
 	Tuple* addr = (Tuple*)(memory_addr + tuple_array_offset);
 	while((int*)addr < memory_addr + string_array_offset)
 	{
+	// TODO: possibly remove this loop and do *only* tuple memcpy (parsing strings in a different method)
 		if(addr->data[0].type != NO_DATA)
 		{
 			for(int i = 0; i < 8; ++i)
 			{
 				if(tuple.data[i].type == DATA_STRING)
-					if(add_string_to_memory(addr->data[i].data_union.data_string, \
-						tuple.data[i].data_union.data_string))
+					if((addr->data[i].data_union.data_string =\
+					    add_string_to_memory(tuple.data[i].data_union.data_string)))
 							addr->data[i].type = tuple.data[i].type;
 					else
 					{
@@ -96,7 +97,8 @@ int Worker::add_tuple_to_memory(Tuple tuple)
 	return 0;
 }
 
-int Worker::add_string_to_memory(char * memory_tuple_str, char * user_tuple_str)
+//returns the address of found free space (or nullptr if none found)
+char* Worker::add_string_to_memory(const char * user_tuple_str)
 {
 	char * str_addr = (char*)(memory_addr + string_array_offset);
 	while((int*)str_addr < memory_addr + waiting_array_offset)
@@ -104,13 +106,12 @@ int Worker::add_string_to_memory(char * memory_tuple_str, char * user_tuple_str)
 		if(*str_addr == NULL_SIGN)
 		{
 			strcpy(str_addr, user_tuple_str);
-			memory_tuple_str = str_addr;
-			return 1;
+			return str_addr;
 		}
 		else
 			str_addr += STRING_SIZE;
 	}
-	return 0;
+	return nullptr;
 }
 
 //return addr of waiting process or nullptr is noone is waiting
@@ -334,3 +335,44 @@ std::string Worker::get_pattern_from_tuple(Tuple tuple)
 	}
 	return pattern;
 }
+// it's not really >>pattern<< but I dunno how to call it '_>'
+Tuple Worker::convert_pattern_to_tuple(std::string pattern)
+{
+    std::stringstream temp(pattern);
+    std::string segment;
+    std::vector<std::string> elements;
+    Tuple to_return;
+
+    while(std::getline(temp, segment, ','))
+    {
+       elements.push_back(segment);
+    }
+    
+    for(unsigned it = 0; it != elements.size(); ++it)
+    {
+        std::string bit = elements[it];
+        std::string substr = bit.substr(2);
+        char type = bit[0];
+        switch(type)
+        {
+            case 's':
+                to_return.data[it].type = data_type::DATA_STRING;
+                to_return.data[it].data_union.data_string = add_string_to_memory(substr.c_str());
+                break;
+            case 'i':
+                to_return.data[it].type = data_type::DATA_INT;
+                to_return.data[it].data_union.data_int = std::stoi(substr);
+                break;
+            case 'f':
+                to_return.data[it].type = data_type::DATA_FLOAT;
+                to_return.data[it].data_union.data_int = std::stof(substr);
+                break;
+            default:
+                // error parsing string - stop parsing
+                to_return.data[it].type = data_type::NO_DATA;
+                return to_return;
+        }
+    }
+    return to_return;
+}
+
