@@ -134,9 +134,9 @@ Tuple_Data PatternString::token_to_data(std::string token)
     return to_return;
 }
 
+// also tokenizes
 std::string PatternString::tuple_to_string(Tuple tuple)
 {
-	
 	int tuple_it = 0;
 	while(tuple.data[tuple_it].type != data_type::NO_DATA && tuple_it < 8)
 	{

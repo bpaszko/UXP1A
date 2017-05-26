@@ -3,7 +3,7 @@
 
 class PatternString {
     public:
-        PatternString(std::string, bool);
+        PatternString(std::string);
         PatternString(Tuple);
         bool operator==(const std::string& rhs)const;
         bool operator==(const Tuple& rhs) const;
@@ -12,7 +12,6 @@ class PatternString {
         std::string pattern_string;
         std::string[8] pattern_token;
         int size;
-        bool search_string;
         
         void tokenize();
         bool compare(std::string, Tuple_Data);
