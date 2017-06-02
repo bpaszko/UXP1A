@@ -1,13 +1,15 @@
+#ifndef __TUPLE_H_
+#define __TUPLE_H_
+
 #include <sys/mman.h>
 #include <fcntl.h>           /* For O_* constants */
 #include <semaphore.h>
 #include <unistd.h>
-
-static int TUPLE_DATA_SIZE = 8;
-static int TUPLE_SIZE = 0x40;
-static int META_SIZE = 0x100;
-static char NULL_SIGN = 0xFF;
-static int STRING_SIZE = 0x40;
+#include <iostream>
+//static int TUPLE_DATA_SIZE = 8;
+//static int TUPLE_SIZE = 0x40;
+//static char NULL_SIGN = 0xFF;
+//static int STRING_SIZE = 0x40;
 
 typedef enum data_type {
 	NO_DATA = -1,
@@ -36,7 +38,7 @@ struct Tuple {
 
 typedef struct {
 	char pattern[543];
-	sem_t* sem;
+	sem_t sem;
 } Pattern_Pair;
 
 typedef struct {
@@ -44,5 +46,13 @@ typedef struct {
 	int tuple_array_offset;
 	int string_array_offset;
 	int waiting_array_offset;
-	sem_t* main_sem;
+	sem_t main_sem;
 } Meta_Data;
+
+
+static int META_SIZE = sizeof(Meta_Data);
+static int TUPLE_DATA_SIZE = 8;
+static int TUPLE_SIZE = sizeof(Tuple);
+static char NULL_SIGN = 0xFF;
+static int STRING_SIZE = 0x40;
+#endif

@@ -1,11 +1,17 @@
+#ifndef __WORKER_H_
+#define __WORKER_H_
+
 #include "tuple.h"
+#include "PatternString.h"
 #include <string.h>
 #include <string>
 #include <vector>
 #include <sstream>
+
 #if DEBUG
 #include <iostream>
 #endif
+
 class Worker
 {
 public: 
@@ -16,7 +22,7 @@ public:
 	Tuple read(std::string pattern);
 
 private:
-	int* memory_addr;
+	char* memory_addr;
 	int tuple_array_offset;
 	int string_array_offset;
 	int waiting_array_offset;
@@ -38,5 +44,8 @@ private:
 	Tuple convert_pattern_to_tuple(std::string pattern);
     std::string get_pattern_from_tuple(Tuple tuple);
     
-	bool compare_tuple_with_pattern(Tuple tuple, std::string pattern);
+	bool compare_tuple_with_pattern(const Tuple& tuple, std::string pattern);
 };
+
+void print(const Tuple&, char* mem_offset = 0);
+#endif
