@@ -8,6 +8,7 @@ class Creator
 public:
 	Creator(int max_tuples=256, int waiting_size=32);
 	~Creator();
+	void cleanup();
 	void releaseSem();
 private:
 	char* memory_addr;

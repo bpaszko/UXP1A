@@ -57,8 +57,7 @@ void Creator::releaseSem()
 	sem_post(&(meta->main_sem));	
 }
 
-
-Creator::~Creator()
+void Creator::cleanup()
 {
 	Meta_Data* meta = (Meta_Data*)memory_addr;
 	sem_destroy(&(meta->main_sem));
@@ -66,4 +65,9 @@ Creator::~Creator()
 	munmap((void*)memory_addr, meta->shared_size);
 	close(fd);
 	shm_unlink("tuple_space");
+}
+
+Creator::~Creator()
+{
+
 }

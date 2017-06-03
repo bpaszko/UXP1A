@@ -10,7 +10,7 @@ class PatternString {
         Tuple get_tuple();
     private:
         std::string pattern_string;
-        std::string[8] pattern_token;
+        std::string pattern_token[8];
         int size;
         
         void tokenize();
@@ -21,4 +21,4 @@ class PatternString {
         std::string tuple_to_string();    
         Tuple_Data token_to_data(std::string);
     
-}
+};
