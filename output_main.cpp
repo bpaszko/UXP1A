@@ -2,6 +2,55 @@
 #include "Worker.h"
 #include "Creator.h"
 
+void fill_data_in_tuple(Tuple& tuple, int i, std::string& current_token)
+{
+	switch(char(current_token[0])){
+        		case 'f':
+        			tuple.data[i].type = data_type::DATA_FLOAT;
+        			tuple.data[i].data_union.data_float = stof(current_token.substr(2));
+        			break;
+        		case 'i':
+        			tuple.data[i].type = data_type::DATA_INT;
+        			tuple.data[i].data_union.data_int = stoi(current_token.substr(2));
+        			break;
+        		case 's':
+        			tuple.data[i].type = data_type::DATA_STRING;
+        			const char * str = current_token.substr(2).c_str();
+        			tuple.data[i].data_union.data_string = new char[strlen(str)+1];
+        			strcpy(tuple.data[i].data_union.data_string, str);
+        			break;
+        	}
+}
+
+
+Tuple& pattern_to_tuple(std::string pattern, Tuple& tuple)
+{
+    bool flag = false;
+    int tokens = 0;
+    std::string current_token;
+    int i = 0;
+    for(i=0; i<pattern.size() && tokens < 8; ++i)
+    {
+        if(pattern[i]=='\"')
+        {
+            flag = !flag;
+            continue;
+        }
+        if(pattern[i]==',' && !flag){
+        	fill_data_in_tuple(tuple, tokens, current_token);
+        	print(tuple);
+        	current_token = "";
+            tokens++;
+        }
+        else
+            current_token += pattern[i];
+    }
+    if(current_token != "")
+    	fill_data_in_tuple(tuple, tokens, current_token);
+    std::cout << tuple.data[0].type << std::endl;
+    return tuple;
+}
+
 void display_help(char* prog_name)
 {
 	std::cout<<"Usage:"<<std::endl<<std::endl;
@@ -50,8 +99,11 @@ int main(int argc, char** argv)
 		std::cout<<"No tuple found - it must be the last argument"<<std::endl;
 		exit(0);
 	}
+
 	std::string pattern(argv[argc-1]);
 	Worker worker;
-	Tuple t = worker.output(pattern);
-	print(t);
+	std::cout << pattern <<std::endl;
+	Tuple tuple;
+	pattern_to_tuple(pattern, tuple);
+	worker.output(tuple);
 }

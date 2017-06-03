@@ -147,7 +147,6 @@ Tuple* Worker::find_tuple_in_memory(std::string pattern)
 //sem_post on semaphore at given address - wakes process waiting for tuple
 void Worker::wake_up_process(Pattern_Pair* waiting_addr)
 {
-	std::cout << waiting_addr->pattern << std::endl << std::flush;
 	sem_post(&(waiting_addr->sem));
 }
 
