@@ -44,8 +44,8 @@ private:
 	Tuple convert_pattern_to_tuple(std::string pattern);
     std::string get_pattern_from_tuple(Tuple tuple);
     
-	bool compare_tuple_with_pattern(const Tuple& tuple, std::string pattern);
+	bool compare_tuple_with_pattern(const Tuple& tuple, std::string pattern, long mem_offset=0);
 };
 
-void print(const Tuple&, char* mem_offset = 0);
+void print(const Tuple&, long mem_offset = 0);
 #endif

@@ -42,11 +42,9 @@ Tuple Worker::read(std::string pattern)
 	Tuple* tuple_addr = nullptr;
 	while(!tuple_addr)
 	{
-		std::cout << "LOOKING FOR" << std::endl << std::flush;
 		tuple_addr = find_tuple_in_memory(pattern);
-		if(!tuple_addr){
+		if(!tuple_addr)
 			wait_in_memory_for_tuple(pattern);
-		}
 	}
 	Tuple tuple = read_tuple_from_memory(tuple_addr);
 	unlock_semaphore();
@@ -83,18 +81,16 @@ int Worker::add_tuple_to_memory(Tuple tuple)
 				{
 				    char* str_addr = add_string_to_memory(tuple.data[i].data_union.data_string);
 					addr->data[i].type = tuple.data[i].type;
-					addr->data[i].data_union.data_string = str_addr;
-					std::cout << "ADDED TUPLE DATA S AT: " << (char*)addr-memory_addr << std::endl << std::flush;
+					addr->data[i].data_union.data_string = str_addr - long(memory_addr);
 				}
-				else{
-					std::cout << "ADDED TUPLE DATA I,F AT: " << (char*)addr-memory_addr << std::endl << std::flush;
+				else
 					addr->data[i] = tuple.data[i];
-				}
 			}
 			return 1;
 		}
 		else
-			addr = (Tuple*)((char*)addr + TUPLE_SIZE);
+			//addr = (Tuple*)((char*)addr + TUPLE_SIZE);
+			addr += 1;
 	}
 	return 0;
 }
@@ -108,7 +104,6 @@ char* Worker::add_string_to_memory(const char * user_tuple_str)
 		if(*str_addr == NULL_SIGN)
 		{
 			strcpy(str_addr, user_tuple_str);
-			std::cout << "ADDED STR AT: " << str_addr-memory_addr << std::endl << std::flush;
 			return str_addr;
 		}
 		else
@@ -125,10 +120,10 @@ Pattern_Pair* Worker::check_waiting_queue(Tuple tuple)
 	{
 		if (*(addr->pattern) != NULL_SIGN)
 			if(compare_tuple_with_pattern(tuple, addr->pattern)){
-				std::cout << "FOUND YOU: " << addr->pattern << std::endl << std::flush;
 				return addr;
 			}
-		addr = (Pattern_Pair*)((char*)addr + sizeof(Pattern_Pair)); 
+		//addr = (Pattern_Pair*)((char*)addr + sizeof(Pattern_Pair)); 
+		addr += 1;
 	}
 	return nullptr;
 }
@@ -140,11 +135,11 @@ Tuple* Worker::find_tuple_in_memory(std::string pattern)
 	while((char*)addr < memory_addr + string_array_offset)
 	{
 		if(addr->data[0].type != data_type::NO_DATA){
-			std::cout << "SOMETHING HERE" << std::endl << std::flush;
-			if(compare_tuple_with_pattern(*addr, pattern))
+			if(compare_tuple_with_pattern(*addr, pattern, long(memory_addr)))
 				return addr;
 		}
-		addr = (Tuple*)((char*)addr + TUPLE_SIZE);
+		//addr = (Tuple*)((char*)addr + TUPLE_SIZE);
+		addr += 1;
 	}
 	return nullptr;
 }
@@ -169,15 +164,14 @@ int Worker::wait_in_memory_for_tuple(std::string pattern)
 			sem_init(&(addr->sem),1,0);
 			unlock_semaphore();
 			sem_wait(&(addr->sem));
-			std::cout << "WOKEN" << std::endl << std::flush;
 			sem_destroy(&(addr->sem));
 			*(addr->pattern) = NULL_SIGN;
 			lock_semaphore();
-			std::cout << "START LOOKING AGAIN" << std::endl << std::flush;
 			return 1;
 		}
 		else
-			addr = (Pattern_Pair*)((char*)addr + sizeof(Pattern_Pair)); 
+			//addr = (Pattern_Pair*)((char*)addr + sizeof(Pattern_Pair)); 
+			addr += 1;
 	}
 	return 0;
 }
@@ -185,19 +179,36 @@ int Worker::wait_in_memory_for_tuple(std::string pattern)
 //returns tuple stored at given address
 Tuple Worker::read_tuple_from_memory(Tuple* addr)
 {
-	Tuple tuple = *addr;
+	Tuple tuple;
+	for(int i =0; i < 8; ++i){
+		switch(addr->data[i].type){
+			case data_type::NO_DATA:
+				return tuple;
+			case data_type::DATA_INT:
+			case data_type::DATA_FLOAT:
+				tuple.data[i] = addr->data[i];
+				break;
+			case data_type::DATA_STRING:
+				char * str = addr->data[i].data_union.data_string + long(memory_addr);
+				tuple.data[i].type = data_type::DATA_STRING;
+				tuple.data[i].data_union.data_string = new char[strlen(str)+1];
+				strcpy(tuple.data[i].data_union.data_string, str);
+				break;
+		}
+	}
 	return tuple;
+
 }
 
 //removes and returns tuple at given address
 Tuple Worker::remove_tuple_from_memory(Tuple* addr)
 {
-	Tuple tuple = *addr;
+	Tuple tuple = read_tuple_from_memory(addr);
 	for(int i = 0; i < 8; ++i)
 	{
-		if(tuple.data[i].type == data_type::DATA_STRING)
+		if(addr->data[i].type == data_type::DATA_STRING)
 		{
-			char * str_addr = tuple.data[i].data_union.data_string;
+			char * str_addr = addr->data[i].data_union.data_string + long(memory_addr);
 			*str_addr = NULL_SIGN;
 		}
 		addr->data[i].type = data_type::NO_DATA;
@@ -217,19 +228,11 @@ void Worker::unlock_semaphore()
 	sem_post(&(meta->main_sem));
 }
 
-/*bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str)
-{
-	return PatternString(str) == tuple;
-}*/
 
-bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str){
+bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, long mem_offset){
     std::stringstream test(str);
     std::string segment;
     std::vector<std::string> elements;
-
-    std::cout << "COMPARING TUPLE TO PATTERN: " << str << std::endl << std::flush;
-    print(tuple);
-    std::cout << std::endl;
 
     while(std::getline(test, segment, ','))
     {
@@ -251,7 +254,7 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str){
 	#if DEBUG
             std::cout<<value;
 	#endif
-            if( value  != tuple.data[i].data_union.data_string){
+            if( value  != tuple.data[i].data_union.data_string + mem_offset){
                 return false;
             }
         }
@@ -324,7 +327,7 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str){
     return true;
 }
 
-void print(const Tuple& t){
+void print(const Tuple& t, long mem_offset){
 	for(int i = 0; i < 8; ++i){
 		switch(t.data[i].type){
 			case data_type::NO_DATA:
@@ -336,7 +339,7 @@ void print(const Tuple& t){
 				std::cout << t.data[i].data_union.data_float << std::endl;
 				break;
 			case data_type::DATA_STRING:
-				std::cout << t.data[i].data_union.data_string << std::endl;
+				std::cout << (t.data[i].data_union.data_string + mem_offset) << std::endl;
 				break;
 		}
 	}
