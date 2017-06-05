@@ -44,13 +44,9 @@ read_debug:  objects_debug
 	${CXX} -c ${CXXFLAGS} ${DEBUG} ${READ_MAIN}
 	${CXX} ${CXXFLAGS} ${DEBUG} -o ${EXEC_READ} ${OBJECTS_O} read_main.o ${LIBRARIES}
 
-debug: 	input_debug
-		read_debug
-		output_debug	
+debug: 	input_debug  read_debug  output_debug	
 
-all: input
-	 read
-	 output
+all: input  read  output
 
 clean:
 	rm *.o
