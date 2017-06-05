@@ -24,9 +24,10 @@ class TestHandler:
         split_out = ret.stdout.decode('utf-8').split("\n") if ret.stdout else ""
         tabbed_out = ""
         for line in split_out:
-            line = self.prefix + " |    " + line + '\n'
+            line = self.prefix + " |   " + line + '\n'
             tabbed_out += line
-        self.log("output: \n" + tabbed_out + "\n\treturn code: " + str(ret.returncode))
+        self.log("output: \n" + tabbed_out)
+        self.log("return code: " + str(ret.returncode))
         return ret.stdout.decode('utf-8'), ret.returncode
 
     def log(self, msg):
@@ -48,10 +49,10 @@ class TestHandler:
     def summarize_tests():
         border = 100*'='
         summary_title = 40*'=' + " TEST SUITE SUMMARY " + 40*'='
-        summary_end = 80*'=' + "SUITE RESULT: {:4}" + "=="
-        test_res_template = "||{:<88}|{:>8}|"
+        summary_end = 78*'=' + " SUITE RESULT: {:4}" + "  ="
+        test_res_template = "||{:<88}|{:^8}|"
         title = test_res_template.format(" Test Name", "Result")
-        test_res_template = "||{:<88}|    {:>8}|"
+        test_res_template = "||{:<88}|{:^17}|"
         print(3*"\n")
         print(border)
         print(summary_title)

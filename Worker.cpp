@@ -30,6 +30,7 @@ Worker::~Worker()
 void Worker::output(Tuple tuple)
 {
 	lock_semaphore();
+	try {
 	int res = add_tuple_to_memory(tuple);
 	if (!res){
 		unlock_semaphore();
@@ -38,25 +39,37 @@ void Worker::output(Tuple tuple)
 	Pattern_Pair* waiting_addr = check_waiting_queue(tuple);
 	if(waiting_addr)
 		wake_up_process(waiting_addr);
+	}
+	catch(std::exception e)
+	{
+		unlock_semaphore();
+		throw e;
+	}
 	unlock_semaphore();
 }
 
 Tuple Worker::read(std::string pattern)
 {
 	lock_semaphore();
-	Tuple* tuple_addr = nullptr;
-	while(!tuple_addr)
-	{
-		tuple_addr = find_tuple_in_memory(pattern);
-		if(!tuple_addr){
-			int res = wait_in_memory_for_tuple(pattern);
-			if (!res){
-				unlock_semaphore();
-				exit(-1);
+	Tuple tuple;
+	try {
+		Tuple* tuple_addr = nullptr;
+		while(!tuple_addr)
+		{
+			tuple_addr = find_tuple_in_memory(pattern);
+			if(!tuple_addr){
+				int res = wait_in_memory_for_tuple(pattern);
+				if (!res){
+					throw std::runtime_error("Error in finding a free space for waiting");
+				}
 			}
 		}
+		tuple = read_tuple_from_memory(tuple_addr);
 	}
-	Tuple tuple = read_tuple_from_memory(tuple_addr);
+	catch(std::exception e) {
+		unlock_semaphore();
+		throw e;
+	}
 	unlock_semaphore();
 	return tuple;
 }
@@ -64,19 +77,25 @@ Tuple Worker::read(std::string pattern)
 Tuple Worker::input(std::string pattern)
 {
 	lock_semaphore();
-	Tuple* tuple_addr = nullptr;
-	while(!tuple_addr)
-	{
-		tuple_addr = find_tuple_in_memory(pattern);
-		if(!tuple_addr){
-			int res = wait_in_memory_for_tuple(pattern);
-			if (!res){
-				unlock_semaphore();
-				exit(-1);
+	Tuple tuple;
+	try {
+		Tuple* tuple_addr = nullptr;
+		while(!tuple_addr)
+		{
+			tuple_addr = find_tuple_in_memory(pattern);
+			if(!tuple_addr){
+				int res = wait_in_memory_for_tuple(pattern);
+				if (!res){
+					throw std::runtime_error("Error in finding a free space for waiting");
+				}
 			}
 		}
+		tuple = remove_tuple_from_memory(tuple_addr);
 	}
-	Tuple tuple = remove_tuple_from_memory(tuple_addr);
+	catch(std::exception e) {
+		unlock_semaphore();
+		throw e;	
+	}
 	unlock_semaphore();
 	return tuple;
 }
@@ -94,6 +113,8 @@ int Worker::add_tuple_to_memory(Tuple tuple)
 				if(tuple.data[i].type == data_type::DATA_STRING)
 				{
 				    char* str_addr = add_string_to_memory(tuple.data[i].data_union.data_string);
+					if(str_addr == nullptr)
+						throw std::runtime_error("Error saving string - not enough space");
 					addr->data[i].type = tuple.data[i].type;
 					addr->data[i].data_union.data_string = str_addr - long(memory_addr);
 				}

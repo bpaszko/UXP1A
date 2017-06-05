@@ -31,6 +31,16 @@ def double_input(test_handler):
     return '15' in out and end-start >= 10
 
 
+def double_out_and_in(test_handler):
+    test_handler.proc_run("../output.out 'i:15'")
+    test_handler.proc_run("../output.out 'i:20'")
+    out, _ = test_handler.proc_run("../input.out 'i:15'")
+    if '15' not in out:
+        return False
+    out, _ = test_handler.proc_run("../input.out 'i:20'")
+    return '20' in out
+
+
 def string_over_max(test_handler):
     out, retcode = test_handler.proc_run('../output.out \'s:\"{}\"\''.format(64*"A"))
     return retcode != 0
@@ -39,25 +49,27 @@ def string_over_max(test_handler):
 def string_with_comma(test_handler):
     funny_str = 'funny string,i:1 right'
     test_handler.proc_run('../output.out \'s:\"{}\"\''.format(funny_str))
-    out, _ = test_handler.proc_run("../input.out 's:*'")
+    out, _ = test_handler.proc_run("../input.out 's:{}'".format("*"))
     return funny_str in out
 
 
 def nine_data_tuple(test_handler):
     eight_datas = "i:1,f:2.0,s:\"three\",i:4,f:5.1,s:\"six\",i:7,f:8.8"
+    eight_datas_pattern = "i:1,f:>=2.0,s:\"three\",i:4,f:>=5.1,s:\"six\",i:7,f:>=8.8"
     nine_datas = eight_datas + ",s:\"this should be ignored\""
     eight_datas_printed = "1\n2\nthree\n4\n5.1\nsix\n7\n8.8"
     test_handler.proc_run('../output.out \'{}\''.format(nine_datas))
-    out, retcode = test_handler.proc_run('../input.out \'{}\''.format(eight_datas))
+    out, retcode = test_handler.proc_run('../input.out \'{}\''.format(eight_datas_pattern))
     return eight_datas_printed in out
 
 
 def max_tuples_possible(test_handler):
-    for i in range(255):
+    test_handler.shmem_cleanup()
+    for i in range(256):
         out, retcode = test_handler.proc_run("timeout 5 ../output.out 'i:{}'".format(i))
         if retcode != 0:
             return False
-    out, retcode = test_handler.proc_run("timeout 5 ../output.out 'i:{}'".format(255))
+    out, retcode = test_handler.proc_run("timeout 5 ../output.out 'i:{}'".format(256))
     # TODO: ^ this should fail, uncomment after implementing an exception
     # if retcode == 0:
     #     return False
@@ -130,6 +142,8 @@ def main():
     test("[E13] Max tuples possible", max_tuples_possible)
     # queue length max is 20 too, let's check it out
     test("[E14] Max queue possible", max_queue)
+    # input on a tuple that went in before shouldn't stop others
+    test("[E15] Double output, double input", double_out_and_in)
 
     TestHandler.summarize_tests()
 
