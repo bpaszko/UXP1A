@@ -19,7 +19,7 @@ class TestHandler:
         split_out = ret.stdout.decode('utf-8').split("\n") if ret.stdout else ""
         tabbed_out = ""
         for line in split_out:
-            line = "\t|" + line + '\n'
+            line = self.prefix + " |    " + line + '\n'
             tabbed_out += line
         self.log("output: \n" + tabbed_out + "\n\treturn code: " + str(ret.returncode))
         return ret.stdout.decode('utf-8'), ret.returncode
