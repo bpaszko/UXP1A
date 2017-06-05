@@ -50,7 +50,7 @@ def string_over_max(test_handler):
 def string_with_comma(test_handler):
     funny_str = 'funny string,i:1 right'
     test_handler.proc_run('../output.out \'s:\"{}\"\''.format(funny_str))
-    out, _ = test_handler.proc_run("../input.out 's:{}'".format("*"))
+    out, _ = test_handler.proc_run("../input.out 's:{}'".format('*'))
     return funny_str in out
 
 
@@ -91,8 +91,13 @@ def max_queue(test_handler):
         Popen(run_template.format(i), shell=True)
     test_handler.proc_run(run_all)
     out, retcode = test_handler.proc_run(run_template.format(32))
-    # TODO: ^ this also should fail, remove timeout after implementing exception
-    return retcode != 0
+    if retcode == 0:
+        return False
+    test_handler.proc_run("../output.out i:15")
+    start = time.time()
+    out, retcode = test_handler.proc_run("timeout 10 " + run_template.format(32))
+    end = time.time()
+    return end-start >= 10
 
 
 def test(title, test_method):
@@ -143,6 +148,8 @@ def main():
     test("[E14] Max queue possible", max_queue)
     # input on a tuple that went in before shouldn't stop others
     test("[E15] Double output, double input", double_out_and_in)
+    # string inequality tests
+    test("[E16] Inequality operators for strings", inequality_operators_str)
 
     TestHandler.summarize_tests()
 
