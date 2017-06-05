@@ -70,9 +70,8 @@ def max_tuples_possible(test_handler):
         if retcode != 0:
             return False
     out, retcode = test_handler.proc_run("timeout 5 ../output.out 'i:{}'".format(256))
-    # TODO: ^ this should fail, uncomment after implementing an exception
-    # if retcode == 0:
-    #     return False
+    if retcode == 0:
+        return False
     out, _ = test_handler.proc_run("../input.out i:50")
     if '50' not in out:
         return False
@@ -89,9 +88,9 @@ def max_queue(test_handler):
     run_all = ""
     for i in range(19):
         run_all += run_template.format(i) + " & "
-    proc = Popen(run_all, shell=True)
-    proc.kill()
-    out, retcode = test_handler.proc_run("timeout 5 " + run_template.format(20))
+    print(run_all)
+    test_handler.proc_run(run_all)
+    out, retcode = test_handler.proc_run(run_template.format(20))
     # TODO: ^ this also should fail, remove timeout after implementing exception
     return retcode != 0
 

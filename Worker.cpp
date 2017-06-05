@@ -31,14 +31,13 @@ void Worker::output(Tuple tuple)
 {
 	lock_semaphore();
 	try {
-	int res = add_tuple_to_memory(tuple);
-	if (!res){
-		unlock_semaphore();
-		exit(-1);
-	}
-	Pattern_Pair* waiting_addr = check_waiting_queue(tuple);
-	if(waiting_addr)
-		wake_up_process(waiting_addr);
+		int res = add_tuple_to_memory(tuple);
+		if (!res){
+			throw std::runtime_error("Error adding a tuple to memory - not enough space?");
+		}
+		Pattern_Pair* waiting_addr = check_waiting_queue(tuple);
+		if(waiting_addr)
+			wake_up_process(waiting_addr);
 	}
 	catch(std::exception e)
 	{
@@ -269,7 +268,7 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
        elements.push_back(segment);
 
     if(elements.size()>8)
-        throw std::exception();
+        throw std::runtime_error("Too many elements in the tuple");
 
     for(unsigned i=0;i<elements.size();i++){
         char type = elements[i][0];
@@ -287,7 +286,7 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
         			return false;
         		break;
         	default:
-        		throw std::exception();
+        		throw std::runtime_error("Incorrect data type");
         }
     }
     for(int i = elements.size();i<8;i++)
@@ -308,31 +307,31 @@ bool Worker::compare_string(const std::string& pattern, const Tuple_Data& data, 
 			if(value[1] == '='){
 				value = value.substr(3, value.size()-4);
 				if(value.size()+1 > 64)
-	            	throw std::exception();
+	            	throw std::runtime_error("String in a tuple too long");
 	            return (data.data_union.data_string + mem_offset) >= value;
 			}
 			value = value.substr(2, value.size()-3);
 			if(value.size()+1 > 64)
-            	throw std::exception();
+            	throw std::runtime_error("String in a tuple too long");
             return (data.data_union.data_string + mem_offset) > value;
 		case '<':
 			if(value[1] == '='){
 				value = value.substr(3, value.size()-4);
 				if(value.size()+1 > 64)
-	            	throw std::exception();
+	            	throw std::runtime_error("String in a tuple too long");
 	            return (data.data_union.data_string + mem_offset) <= value;
 			}
 			value = value.substr(2, value.size()-3);
 			if(value.size()+1 > 64)
-            	throw std::exception();
+            	throw std::runtime_error("String in a tuple too long");
             return (data.data_union.data_string + mem_offset) < value;
 		case '"':
 			value = value.substr(1, value.size()-2);
 			if(value.size()+1 > 64)
-            	throw std::exception();
+            	throw std::runtime_error("String in a tuple too long");
             return (data.data_union.data_string + mem_offset) == value;
 		default:
-			throw std::exception();
+			throw std::runtime_error("String in a tuple invalid");
 	}
 
 
@@ -387,7 +386,7 @@ bool Worker::compare_float(const std::string& pattern, const Tuple_Data& data){
 			value = value.substr(1);
             return data.data_union.data_float < std::stof(value);
 		default:
-            throw std::exception();
+            throw std::runtime_error("Invalid float operation");
         }
 }
 
