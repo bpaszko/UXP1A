@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Worker.h"
 #include "Creator.h"
+#include <exception>
 
 void fill_data_in_tuple(Tuple& tuple, int i, std::string& current_token)
 {
@@ -15,9 +16,11 @@ void fill_data_in_tuple(Tuple& tuple, int i, std::string& current_token)
         			break;
         		case 's':
         			tuple.data[i].type = data_type::DATA_STRING;
-        			const char * str = current_token.substr(2).c_str();
-        			tuple.data[i].data_union.data_string = new char[strlen(str)+1];
-        			strcpy(tuple.data[i].data_union.data_string, str);
+        			int len = strlen((current_token.substr(2)).c_str())+1;
+        			if(len > 64)
+        				throw std::exception();
+        			tuple.data[i].data_union.data_string = new char[len];
+        			strcpy(tuple.data[i].data_union.data_string, (current_token.substr(2)).c_str());
         			break;
         	}
 }
@@ -105,5 +108,6 @@ int main(int argc, char** argv)
 	std::cout << pattern <<std::endl;
 	Tuple tuple;
 	pattern_to_tuple(pattern, tuple);
+	print(tuple);
 	worker.output(tuple);
 }

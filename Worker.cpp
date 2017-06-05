@@ -1,10 +1,11 @@
 #include "Worker.h"
+#include <exception>
 
 Worker::Worker()
 {
 	fd = shm_open("/tuple_space", O_RDWR, 0777);
 	read_meta_data(fd);
-	void* mem = mmap(0, shared_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_SHARED, fd, 0);
+	void* mem = mmap(0, shared_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 	memory_addr = (char*)mem;
 }
 
@@ -103,6 +104,7 @@ char* Worker::add_string_to_memory(const char * user_tuple_str)
 	{
 		if(*str_addr == NULL_SIGN)
 		{
+			std::cout << user_tuple_str << " LEL" << std::endl;
 			strcpy(str_addr, user_tuple_str);
 			return str_addr;
 		}
@@ -232,7 +234,6 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
     std::stringstream test(str);
     std::string segment;
     std::vector<std::string> elements;
-
     while(std::getline(test, segment, ','))
     {
        elements.push_back(segment);
@@ -243,16 +244,15 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
     }
     for(unsigned i=0;i<elements.size();i++){
         char type = elements[i][0];
-        if(type == 's'){
+        if(type == 's' && tuple.data[i].type == data_type::DATA_STRING){
             std::string value = elements[i].substr(2);
             if(value == "*"){
                 continue;
             }
             value = value.substr(1);
             value = value.substr(0,value.size()-1);
-	#if DEBUG
-            std::cout<<value;
-	#endif
+            if( value.size()+1 > 64)
+            	throw std::exception();
             if( value  != tuple.data[i].data_union.data_string + mem_offset){
                 return false;
             }
@@ -295,7 +295,9 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
             }
             else{
                 std::string value = elements[i].substr(3);
+                std::cout << value << std::endl;
                 char sign = elements[i][2];
+                std::cout << sign << std::endl;
                 if(sign == '*'){
                     continue;
                 }
@@ -325,6 +327,7 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
     }
     return true;
 }
+
 
 void print(const Tuple& t, long mem_offset){
 	for(int i = 0; i < 8; ++i){
