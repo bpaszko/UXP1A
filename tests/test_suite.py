@@ -32,6 +32,7 @@ def double_input(test_handler):
 
 
 def double_out_and_in(test_handler):
+    test_handler.shmem_cleanup()
     test_handler.proc_run("../output.out 'i:15'")
     test_handler.proc_run("../output.out 'i:20'")
     out, _ = test_handler.proc_run("../input.out 'i:15'")
@@ -86,11 +87,10 @@ def max_queue(test_handler):
     test_handler.shmem_cleanup()
     run_template = "../input.out i:{}"
     run_all = ""
-    for i in range(19):
-        run_all += run_template.format(i) + " & "
-    print(run_all)
+    for i in range(32):
+        Popen(run_template.format(i), shell=True)
     test_handler.proc_run(run_all)
-    out, retcode = test_handler.proc_run(run_template.format(20))
+    out, retcode = test_handler.proc_run(run_template.format(32))
     # TODO: ^ this also should fail, remove timeout after implementing exception
     return retcode != 0
 

@@ -18,7 +18,7 @@ void fill_data_in_tuple(Tuple& tuple, int i, std::string& current_token)
         			tuple.data[i].type = data_type::DATA_STRING;
         			int len = strlen((current_token.substr(2)).c_str())+1;
         			if(len > 64)
-        				throw std::exception();
+        				throw std::runtime_error("String too long.");
         			tuple.data[i].data_union.data_string = new char[len];
         			strcpy(tuple.data[i].data_union.data_string, (current_token.substr(2)).c_str());
         			break;

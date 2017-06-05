@@ -39,7 +39,7 @@ void Worker::output(Tuple tuple)
 		if(waiting_addr)
 			wake_up_process(waiting_addr);
 	}
-	catch(std::exception e)
+	catch(std::runtime_error e)
 	{
 		unlock_semaphore();
 		throw e;
@@ -65,7 +65,7 @@ Tuple Worker::read(std::string pattern)
 		}
 		tuple = read_tuple_from_memory(tuple_addr);
 	}
-	catch(std::exception e) {
+	catch(std::runtime_error e) {
 		unlock_semaphore();
 		throw e;
 	}
@@ -91,7 +91,7 @@ Tuple Worker::input(std::string pattern)
 		}
 		tuple = remove_tuple_from_memory(tuple_addr);
 	}
-	catch(std::exception e) {
+	catch(std::runtime_error e) {
 		unlock_semaphore();
 		throw e;	
 	}
