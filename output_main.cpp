@@ -50,7 +50,6 @@ Tuple& pattern_to_tuple(std::string pattern, Tuple& tuple)
     }
     if(current_token != "")
     	fill_data_in_tuple(tuple, tokens, current_token);
-    std::cout << tuple.data[0].type << std::endl;
     return tuple;
 }
 
@@ -105,9 +104,7 @@ int main(int argc, char** argv)
 
 	std::string pattern(argv[argc-1]);
 	Worker worker;
-	std::cout << pattern <<std::endl;
 	Tuple tuple;
 	pattern_to_tuple(pattern, tuple);
-	print(tuple);
 	worker.output(tuple);
 }

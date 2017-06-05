@@ -2,7 +2,6 @@
 #define __WORKER_H_
 
 #include "tuple.h"
-#include "PatternString.h"
 #include <string.h>
 #include <string>
 #include <vector>
@@ -45,6 +44,10 @@ private:
     std::string get_pattern_from_tuple(Tuple tuple);
     
 	bool compare_tuple_with_pattern(const Tuple& tuple, std::string pattern, long mem_offset=0);
+	bool compare_string(const std::string&, const Tuple_Data&, long);
+	bool compare_int(const std::string&, const Tuple_Data&);
+	bool compare_float(const std::string&, const Tuple_Data&);
+
 };
 
 void print(const Tuple&, long mem_offset = 0);

@@ -30,7 +30,11 @@ Worker::~Worker()
 void Worker::output(Tuple tuple)
 {
 	lock_semaphore();
-	add_tuple_to_memory(tuple);
+	int res = add_tuple_to_memory(tuple);
+	if (!res){
+		unlock_semaphore();
+		exit(-1);
+	}
 	Pattern_Pair* waiting_addr = check_waiting_queue(tuple);
 	if(waiting_addr)
 		wake_up_process(waiting_addr);
@@ -44,8 +48,13 @@ Tuple Worker::read(std::string pattern)
 	while(!tuple_addr)
 	{
 		tuple_addr = find_tuple_in_memory(pattern);
-		if(!tuple_addr)
-			wait_in_memory_for_tuple(pattern);
+		if(!tuple_addr){
+			int res = wait_in_memory_for_tuple(pattern);
+			if (!res){
+				unlock_semaphore();
+				exit(-1);
+			}
+		}
 	}
 	Tuple tuple = read_tuple_from_memory(tuple_addr);
 	unlock_semaphore();
@@ -59,8 +68,13 @@ Tuple Worker::input(std::string pattern)
 	while(!tuple_addr)
 	{
 		tuple_addr = find_tuple_in_memory(pattern);
-		if(!tuple_addr)
-			wait_in_memory_for_tuple(pattern);
+		if(!tuple_addr){
+			int res = wait_in_memory_for_tuple(pattern);
+			if (!res){
+				unlock_semaphore();
+				exit(-1);
+			}
+		}
 	}
 	Tuple tuple = remove_tuple_from_memory(tuple_addr);
 	unlock_semaphore();
@@ -73,7 +87,6 @@ int Worker::add_tuple_to_memory(Tuple tuple)
 	Tuple* addr = (Tuple*)(memory_addr + tuple_array_offset);
 	while((char*)addr < memory_addr + string_array_offset)
 	{
-	// TODO: possibly remove this loop and do *only* tuple memcpy (parsing strings in a different method)
 		if(addr->data[0].type == data_type::NO_DATA)
 		{
 			for(int i = 0; i < 8; ++i)
@@ -104,7 +117,6 @@ char* Worker::add_string_to_memory(const char * user_tuple_str)
 	{
 		if(*str_addr == NULL_SIGN)
 		{
-			std::cout << user_tuple_str << " LEL" << std::endl;
 			strcpy(str_addr, user_tuple_str);
 			return str_addr;
 		}
@@ -121,9 +133,8 @@ Pattern_Pair* Worker::check_waiting_queue(Tuple tuple)
 	while ((char*)addr < memory_addr + shared_size)
 	{
 		if (*(addr->pattern) != NULL_SIGN)
-			if(compare_tuple_with_pattern(tuple, addr->pattern)){
+			if(compare_tuple_with_pattern(tuple, addr->pattern))
 				return addr;
-			}
 		//addr = (Pattern_Pair*)((char*)addr + sizeof(Pattern_Pair)); 
 		addr += 1;
 	}
@@ -136,10 +147,9 @@ Tuple* Worker::find_tuple_in_memory(std::string pattern)
 	Tuple* addr = (Tuple*)(memory_addr + tuple_array_offset);
 	while((char*)addr < memory_addr + string_array_offset)
 	{
-		if(addr->data[0].type != data_type::NO_DATA){
+		if(addr->data[0].type != data_type::NO_DATA)
 			if(compare_tuple_with_pattern(*addr, pattern, long(memory_addr)))
 				return addr;
-		}
 		//addr = (Tuple*)((char*)addr + TUPLE_SIZE);
 		addr += 1;
 	}
@@ -235,6 +245,137 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
     std::string segment;
     std::vector<std::string> elements;
     while(std::getline(test, segment, ','))
+       elements.push_back(segment);
+
+    if(elements.size()>8)
+        throw std::exception();
+
+    for(unsigned i=0;i<elements.size();i++){
+        char type = elements[i][0];
+        switch(type){
+        	case 'f':
+        		if(!compare_float(elements[i], tuple.data[i]))
+        			return false;
+        		break;
+        	case 'i':
+        		if(!compare_int(elements[i], tuple.data[i]))
+        			return false;
+        		break;
+        	case 's':
+        		if(!compare_string(elements[i], tuple.data[i], mem_offset))
+        			return false;
+        		break;
+        	default:
+        		throw std::exception();
+        }
+    }
+    for(int i = elements.size();i<8;i++)
+        if(tuple.data[i].type != data_type::NO_DATA)
+            return false;
+    return true;
+}
+
+
+bool Worker::compare_string(const std::string& pattern, const Tuple_Data& data, long mem_offset){
+	if(data.type != data_type::DATA_STRING)
+		return false;
+	std::string value = pattern.substr(2);
+	switch(value[0]){
+		case '*':
+			return true;
+		case '>':
+			if(value[1] == '='){
+				value = value.substr(3, value.size()-4);
+				if(value.size()+1 > 64)
+	            	throw std::exception();
+	            return (data.data_union.data_string + mem_offset) >= value;
+			}
+			value = value.substr(2, value.size()-3);
+			if(value.size()+1 > 64)
+            	throw std::exception();
+            return (data.data_union.data_string + mem_offset) > value;
+		case '<':
+			if(value[1] == '='){
+				value = value.substr(3, value.size()-4);
+				if(value.size()+1 > 64)
+	            	throw std::exception();
+	            return (data.data_union.data_string + mem_offset) <= value;
+			}
+			value = value.substr(2, value.size()-3);
+			if(value.size()+1 > 64)
+            	throw std::exception();
+            return (data.data_union.data_string + mem_offset) < value;
+		case '"':
+			value = value.substr(1, value.size()-2);
+			if(value.size()+1 > 64)
+            	throw std::exception();
+            return (data.data_union.data_string + mem_offset) == value;
+		default:
+			throw std::exception();
+	}
+
+
+}
+
+bool Worker::compare_int(const std::string& pattern, const Tuple_Data& data){
+	if(data.type != data_type::DATA_INT)
+		return false;
+	std::string value = pattern.substr(2);
+	switch(value[0]){
+		case '*':
+			return true;
+		case '>':
+			if(value[1] == '='){
+				value = value.substr(2);
+	            return data.data_union.data_int >= std::stoi(value);
+			}
+			value = value.substr(1);
+            return data.data_union.data_int > std::stoi(value);
+		case '<':
+			if(value[1] == '='){
+				value = value.substr(2);
+	            return data.data_union.data_int <= std::stoi(value);
+			}
+			value = value.substr(1);
+            return data.data_union.data_int < std::stoi(value);
+		default:
+            return data.data_union.data_int == std::stoi(value);
+	}
+
+}
+
+bool Worker::compare_float(const std::string& pattern, const Tuple_Data& data){
+	if(data.type != data_type::DATA_FLOAT)
+		return false;
+	std::string value = pattern.substr(2);
+	switch(value[0]){
+		case '*':
+			return true;
+		case '>':
+			if(value[1] == '='){
+				value = value.substr(2);
+	            return data.data_union.data_float >= std::stof(value);
+			}
+			value = value.substr(1);
+            return data.data_union.data_float > std::stof(value);
+		case '<':
+			if(value[1] == '='){
+				value = value.substr(2);
+	            return data.data_union.data_float <= std::stof(value);
+			}
+			value = value.substr(1);
+            return data.data_union.data_float < std::stof(value);
+		default:
+            throw std::exception();
+        }
+}
+
+
+/*bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, long mem_offset){
+    std::stringstream test(str);
+    std::string segment;
+    std::vector<std::string> elements;
+    while(std::getline(test, segment, ','))
     {
        elements.push_back(segment);
     }
@@ -295,9 +436,7 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
             }
             else{
                 std::string value = elements[i].substr(3);
-                std::cout << value << std::endl;
                 char sign = elements[i][2];
-                std::cout << sign << std::endl;
                 if(sign == '*'){
                     continue;
                 }
@@ -326,7 +465,7 @@ bool Worker::compare_tuple_with_pattern(const Tuple& tuple, std::string str, lon
         }
     }
     return true;
-}
+}*/
 
 
 void print(const Tuple& t, long mem_offset){
